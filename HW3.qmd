@@ -57,62 +57,28 @@ model_2L <- glm(AUAREQC ~ RIAGENDR + factor(DMDCITZN) + DMDHHSZA + INDHHIN2, fam
 ```
 
 ```{r}
-library(dplyr)
-library(tidyr)
-library(purrr)
-library(broom)
-library(knitr)
 
-# 1. Put your models into a named list
-models <- list(
-  "Model 1R" = model_1R, 
-  "Model 2R" = model_2R, 
-  "Model 1L" = model_1L, 
-  "Model 2L" = model_2L
+library(knitr)
+library(pscl)
+
+build_metrics <- function(model) {
+  c(IRR = exp(coef(model)["RIAGENDR"]),N   = nobs(model),R2  = pR2(model)["McFadden"],AIC = model$aic)
+}
+
+
+df <- data.frame(
+  Model_1R = build_metrics(model_1R),
+  Model_2R = build_metrics(model_2R),
+  Model_1L = build_metrics(model_1L),
+  Model_2L = build_metrics(model_2L)
 )
 
-# 2. Extract and format coefficients (IRRs) for all models
-coef_part <- map_dfr(models, ~ tidy(.x, exponentiate = TRUE), .id = "Model") %>%
-  mutate(
-    # Add significance stars to the IRR values
-    stars = case_when(
-      p.value < 0.001 ~ "***",
-      p.value < 0.01  ~ "**",
-      p.value < 0.05  ~ "*",
-      TRUE            ~ ""
-    ),
-    IRR_Label = paste0(round(estimate, 3), stars)
-  ) %>%
-  select(Model, term, IRR_Label) %>%
-  # Pivot into a wide format where each model gets its own column
-  pivot_wider(names_from = Model, values_from = IRR_Label, values_fill = "-") %>%
-  rename(Statistic = term)
+df_flipped <- as.data.frame(t(df))
 
-# 3. Extract model diagnostics (N, AIC, Pseudo-R2)
-stats_part <- map_dfr(models, function(m) {
-  pseudo_r2 <- 1 - (logLik(m) / logLik(update(m, . ~ 1)))
-  data.frame(
-    N = as.character(nobs(m)),
-    AIC = as.character(round(AIC(m), 3)),
-    `Pseudo R²` = as.character(round(pseudo_r2, 3)),
-    check.names = FALSE
-  )
-}, .id = "Model") %>%
-  # Pivot long and wide to align with the coefficients layout
-  pivot_longer(-Model, names_to = "Statistic", values_to = "Value") %>%
-  pivot_wider(names_from = Model, values_from = Value)
-
-# 4. Combine coefficients and stats into a single final table
-final_table <- bind_rows(coef_part, stats_part)
-
-# 5. Output as a clean HTML table using kable
-kable(final_table, 
-      format = "html", 
-      align = "lcccc",
-      caption = "Poisson Regression Results: Incidence Risk Ratios (IRRs) and Model Statistics")
-
+kable(df_flipped, col.names = c("Incidence Risk Ratio", "Sample Size", "R2", "AIC"), digits = 3)
 
 ```
+
 
 d)
 ```{r}
@@ -120,7 +86,8 @@ summary(model_2L)
 library(marginaleffects)
 avg_predictions(model_2L, variables = "RIAGENDR")
 ```
-We therefore conclude that males have a bigger predicted risk ratio. It is statistically significant.
+We therefore conclude that males have a bigger predicted risk ratio. It is statistically significant, [1.26, 1.36] vs [1.12, 1.21].
+
 # Exercise 2
 
 a)
@@ -128,6 +95,7 @@ a)
 ```{r}
 library(DBI) 
 library(dplyr)
+library(microbenchmark)
 
 db <- dbConnect(RSQLite::SQLite(), "sakila_master.db")
 
@@ -158,9 +126,10 @@ results <- dbGetQuery(db, "SELECT AVG( CASE WHEN customer_list.notes = 'active' 
 print(results)
 }
 
+microbenchmark(v1 = v1(), v2 = v2())
 
 ```
-
+Only SQL is faster. 
 
 b)
 
@@ -170,16 +139,16 @@ v1 <- function() {
 results <- dbGetQuery(db, "SELECT * FROM staff_list")
 
 total <- results[, c("name", "country")]
-print(total)
 }
 
 v2 <- function() {
 results <- dbGetQuery(db, "SELECT staff_list.name, staff_list.country FROM staff_list")
-print(results)
 }
 
-```
+microbenchmark(v1 = v1(), v2 = v2())
 
+```
+Only SQL is marginally faster.
 
 c)
 
@@ -190,16 +159,17 @@ v1 <- function() {
 results <- dbGetQuery(db, "SELECT * FROM film_list")
 results <- results[results$price == max(results$price),]
 results <- unique(results$title)
-print(results)
 }
 
 v2 <- function() {
 results <- dbGetQuery(db, "SELECT DISTINCT title FROM film_list WHERE film_list.price = (SELECT MAX(price) from film_list)")
-print(results)
   
 }
 
+microbenchmark(v1 = v1(), v2 = v2())
+
 ```
+Only SQL is faster.
 
 # Exercise 3
 
@@ -239,53 +209,42 @@ print(length(match_indices) / nrow(data))
 d)
 
 ```{r}
-library(stringr)
 
-# Function to clean and format into cell phone style (1234-567-890)
 format_to_cell <- function(phone_col) {
-  # 1. Remove all non-digits
-  clean_digits <- str_replace_all(phone_col, "\\D", "")
-  # 2. Reformat using regex capture groups
-  str_replace(clean_digits, "(\\d{4})(\\d{3})(\\d{3})", "\\1-\\2-\\3")
+  clean_digits <- gsub("\\D", "", phone_col)
+  gsub("(\\d{4})(\\d{3})(\\d{3})", "\\1-\\2-\\3", clean_digits)
 }
 
-# Apply to your columns
 data$phone1 <- format_to_cell(data$phone1)
 data$phone2 <- format_to_cell(data$phone2)
 
-# Print the first 10 rows of each column to verify
 head(data[, c("phone1", "phone2")], 10)
 ```
 
 e)
 
 ```{r}
+library(stringr)
+
 pattern <- "(?i)(apt|apartment|unit|#)\\s*([a-z0-9-]+)"
 
-df <- data %>% 
-  mutate(apt_full = str_extract(address, pattern))
+df <- data %>% mutate(apt_full = str_extract(address, pattern))
 
-df <- df %>% 
-  mutate(
-    apt_cleaned = as.integer(str_remove(apt_full, "#"))
-  )
+df <- df %>% mutate(apt_cleaned = as.integer(str_remove(apt_full, "#")))
 
 print(df)
-
 hist(log(df$apt_cleaned), na.rm = TRUE)
 ```
 
 f)
 ```{r}
+library(stringr)
+
 pattern <- "(?i)(apt|apartment|unit|#)\\s*([a-z0-9-]+)"
 
-df <- data %>% 
-  mutate(apt_full = str_extract(address, pattern))
+df <- data %>% mutate(apt_full = str_extract(address, pattern))
 
-df <- df %>% 
-  mutate(
-    apt_cleaned = as.integer(substr(str_remove(apt_full, "#"), 1, 1))
-  )
+df <- df %>% mutate(apt_cleaned = as.integer(substr(str_remove(apt_full, "#"), 1, 1)))
 
 print(df)
 

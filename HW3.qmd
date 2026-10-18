@@ -7,6 +7,8 @@ editor: visual
 
 # Exercise 1
 
+The github repo is https://github.com/leonestv-byte/506_hw3. 
+
 
 a) 
 ```{r}

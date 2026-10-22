@@ -26,13 +26,17 @@ aux <- read_xpt("AUX_I.xpt")
 demo <- read_xpt("DEMO_I.xpt")
 
 data <- inner_join(aux, demo, by = "SEQN")
-print(paste("The number of rows remaining is ", nrow(data)))
-print(paste("The number of columns remaining is ", ncol(data)))
+print(paste("The number of rows remaining is ",
+            nrow(data)))
+print(paste("The number of columns remaining is ",
+            ncol(data)))
 ```
 
 ## b) We’ll be using the following variables. Clean up each - ensure all missing values are actually NA (rather than 999 or something), and if it’s categorical, convert it to factor with informative levels.
 
 ### Gender
+
+Below, we see the meaning of the codes listed in the Gender column. 
 
 #### 1: Male
 
@@ -46,6 +50,8 @@ No Gender values are missing or lack a usual category. We therefore proceed with
 
 ### Citizenship
 
+Below, we see the meaning of the codes listed in the Citizenship column. 
+
 #### 1: Citizen
 
 #### 2: Not a Citizen
@@ -55,13 +61,17 @@ No Gender values are missing or lack a usual category. We therefore proceed with
 #### 9: Don't Know
 
 ```{r}
-print(paste("Number Refused: ", sum(data$DMDCITZN == 7, na.rm = TRUE)))
-print(paste("Number Don't Know ", sum(data$DMDCITZN == 9, na.rm = TRUE)))
-print(paste("Number NA:", sum(is.na(data$DMDCITZN))))
+print(paste("Number Refused: ",
+            sum(data$DMDCITZN == 7, na.rm = TRUE)))
+print(paste("Number Don't Know ",
+            sum(data$DMDCITZN == 9, na.rm = TRUE)))
+print(paste("Number NA:",
+            sum(is.na(data$DMDCITZN))))
 
 data$DMDCITZN[data$DMDCITZN %in%  c(7, 9)] <- NA
 
-print(paste("Number NA after cleanup:", sum(is.na(data$DMDCITZN))))
+print(paste("Number NA after cleanup:",
+            sum(is.na(data$DMDCITZN))))
 ```
 
 ```{r}
@@ -71,6 +81,8 @@ hist(data$DMDCITZN)
 We proceed as the data is cleaned up.
 
 ### Number of children 5 years or younger in the house.
+
+Below, we see the meaning of the codes listed in the Number of children 5 years or younger column. 
 
 #### 0: 0 Children
 
@@ -87,6 +99,8 @@ hist(data$DMDHHSZA)
 No Number of children 5 years or younger values are missing or lack a usual category. We therefore proceed with the data cleaned.
 
 ### Annual household income
+
+Below, we see the meaning of the codes listed in the Annual Household column. 
 
 #### 1: \$0 to \$4,500
 
@@ -108,16 +122,24 @@ No Number of children 5 years or younger values are missing or lack a usual cate
 
 #### 99: Don't Know
 
+We notice that 12 and 13 are irrelevant - we have more fine grained columns. We therefore remove them. 
+
 ```{r}
-print(paste("Number 20,000 and under:", sum(data$INDHHIN2 == 12, na.rm = TRUE)))
-print(paste("Number under 20,000:", sum(data$INDHHIN2 == 13, na.rm = TRUE)))
-print(paste("Number refused:", sum(data$INDHHIN2 == 77, na.rm = TRUE)))
-print(paste("Number Don't Know:", sum(data$INDHHIN2 == 99, na.rm = TRUE)))
-print(paste("Number NA:", sum(is.na(data$INDHHIN2))))
+print(paste("Number 20,000 and under:",
+            sum(data$INDHHIN2 == 12, na.rm = TRUE)))
+print(paste("Number under 20,000:",
+            sum(data$INDHHIN2 == 13, na.rm = TRUE)))
+print(paste("Number refused:",
+            sum(data$INDHHIN2 == 77, na.rm = TRUE)))
+print(paste("Number Don't Know:",
+            sum(data$INDHHIN2 == 99, na.rm = TRUE)))
+print(paste("Number NA:",
+            sum(is.na(data$INDHHIN2))))
 
 data$INDHHIN2[data$INDHHIN2 %in%  c(12, 13, 77, 99)] <- NA
 
-print(paste("Number NA after Fixing:", sum(is.na(data$INDHHIN2))))
+print(paste("Number NA after Fixing:",
+            sum(is.na(data$INDHHIN2))))
 ```
 
 ```{r}
@@ -126,25 +148,31 @@ hist(data$INDHHIN2)
 
 We proceed as the data is cleaned up.
 
-## c) The Tympanometric width measure is looks approximately like a Poisson distribution. Fit four Poisson regression models predicting a respondent’s Tympanometric width in each ear. Each model is defined below, for a specific ear and a specific set of covariates.
+## c) The Tympanometric width measure looks approximately like a Poisson distribution. Fit four Poisson regression models predicting a respondent’s Tympanometric width in each ear. Each model is defined below, for a specific ear and a specific set of covariates.
 
-#### 1R
+#### 1R - Right ear: gender
 
-#### 2R
+#### 2R - Right ear: gender, citizenship status (as categorical), number of children (as continuous), annual household income (as continuous)
 
-#### 1L
+#### 1L - Left ear: gender
 
-#### 2L
+#### 2L - Left ear: gender, citizenship status (as categorical), number of children (as continuous), annual household income (as continuous)
 
 Produce a table presenting the estimated incidence risk ratios for the coefficients in each model, along with the sample size for the model, the pseudo-𝑅2, and AIC values. (This can be a single table, or one table for coefficients and a separate table for model statistics).
 
 ```{r}
 
-model_1R <- glm(AUAREQC ~ RIAGENDR, family = poisson(link = "log"), data = data)
-model_2R <- glm(AUAREQC ~ RIAGENDR + factor(DMDCITZN) + DMDHHSZA + INDHHIN2, family = poisson(link = "log"), data = data)
+model_1R <- glm(AUAREQC ~ RIAGENDR,
+                family = poisson(link = "log"), data = data)
+model_2R <- glm(AUAREQC ~ RIAGENDR
+                + factor(DMDCITZN) + DMDHHSZA + INDHHIN2,
+                family = poisson(link = "log"), data = data)
 
-model_1L <- glm(AUALEQC ~ RIAGENDR, family = poisson(link = "log"), data = data)
-model_2L <- glm(AUAREQC ~ RIAGENDR + factor(DMDCITZN) + DMDHHSZA + INDHHIN2, family = poisson(link = "log"), data = data)
+model_1L <- glm(AUALEQC ~ RIAGENDR,
+                family = poisson(link = "log"), data = data)
+model_2L <- glm(AUAREQC ~ RIAGENDR
+                + factor(DMDCITZN) + DMDHHSZA + INDHHIN2,
+                family = poisson(link = "log"), data = data)
 
 ```
 
@@ -158,7 +186,10 @@ library(pscl)
 ```{r}
 
 build_metrics <- function(model) {
-  c(IRR = exp(coef(model)["RIAGENDR"]),N   = nobs(model),R2  = pR2(model)["McFadden"],AIC = model$aic)
+  c(IRR = exp(coef(model)["RIAGENDR"]),
+    N   = nobs(model),
+    R2  = pR2(model)["McFadden"],
+    AIC = model$aic)
 }
 
 
@@ -171,7 +202,12 @@ df <- data.frame(
 
 df_flipped <- as.data.frame(t(df))
 
-kable(df_flipped, col.names = c("Incidence Risk Ratio", "Sample Size", "R2", "AIC"), digits = 3)
+kable(df_flipped,
+      col.names = c("Incidence Risk Ratio",
+                    "Sample Size",
+                    "R2",
+                    "AIC"),
+      digits = 3)
 
 ```
 
@@ -180,7 +216,8 @@ kable(df_flipped, col.names = c("Incidence Risk Ratio", "Sample Size", "R2", "AI
 ```{r}
 summary(model_2L)
 library(marginaleffects)
-avg_predictions(model_2L, variables = "RIAGENDR")
+avg_predictions(model_2L,
+                variables = "RIAGENDR")
 ```
 
 We therefore conclude that males have a bigger predicted risk ratio. It is statistically significant, \[1.26, 1.37\] vs \[1.11, 1.21\].
@@ -196,17 +233,21 @@ library(DBI)
 library(dplyr)
 library(microbenchmark)
 
-db <- dbConnect(RSQLite::SQLite(), "sakila_master.db")
+db <- dbConnect(RSQLite::SQLite(),
+                "sakila_master.db")
 
 #1)
 
 v1 <- function() {
-results <- dbGetQuery(db, "SELECT store_id, active FROM customer")
+results <- dbGetQuery(db,
+                      "SELECT store_id,
+                      active FROM customer")
 
 total <- results %>%
   group_by(store_id) %>% 
   summarise(total_customers = n(),
-              average_active = mean(active == 1, na.rm = TRUE),.groups = "drop")
+              average_active = mean(active == 1, na.rm = TRUE),
+            .groups = "drop")
 return(total)
 }
 
@@ -216,7 +257,13 @@ print(v1())
 #2)
 
 v2 <- function() {
-results <- dbGetQuery(db, "SELECT AVG( CASE WHEN customer.active == 1 THEN 1.0 ELSE 0 END) AS average_active, COUNT(customer.customer_id) AS total FROM customer GROUP BY customer.store_id")
+results <- dbGetQuery(db,
+"SELECT store_id, AVG( CASE WHEN customer.active == 1
+THEN 1.0 ELSE 0 END)
+AS average_active,
+COUNT(customer.customer_id)
+AS total FROM customer GROUP BY
+customer.store_id")
 return(results)
 }
 
@@ -233,7 +280,14 @@ Only SQL is faster.
 ```{r}
 
 v1 <- function() {
-results <- dbGetQuery(db, "SELECT * FROM staff JOIN address on staff.address_id = address.address_id JOIN city on city.city_id = address.city_id JOIN country on city.country_id = country.country_id")
+results <- dbGetQuery(db,
+                      "SELECT * FROM staff
+                      JOIN address
+                      ON staff.address_id = address.address_id
+                      JOIN city
+                      ON city.city_id = address.city_id
+                      JOIN country
+                      ON city.country_id = country.country_id")
 results$name <- paste(results$first_name, results$last_name)
 total <- results[, c("name", "country")]
 return(total)
@@ -242,7 +296,17 @@ return(total)
 print(v1())
 
 v2 <- function() {
-results <- dbGetQuery(db, "SELECT CONCAT(first_name, ' ', last_name) AS name, country FROM staff JOIN address on staff.address_id = address.address_id JOIN city on city.city_id = address.city_id JOIN country on city.country_id = country.country_id")
+results <- dbGetQuery(db,
+"SELECT
+CONCAT(first_name, ' ', last_name)
+AS name, country
+FROM staff
+JOIN address
+ON staff.address_id = address.address_id
+JOIN city
+ON city.city_id = address.city_id
+JOIN country
+ON city.country_id = country.country_id")
 return(results)
 }
 
@@ -259,7 +323,13 @@ Only SQL is marginally faster.
 ```{r}
 
 v1 <- function() {
-results <- dbGetQuery(db, "SELECT * FROM rental JOIN inventory ON rental.inventory_id = inventory.inventory_id JOIN film ON inventory.film_id = film.film_id")
+results <- dbGetQuery(db,
+                      "SELECT *
+                      FROM rental
+                      JOIN inventory
+                      ON rental.inventory_id = inventory.inventory_id
+                      JOIN film
+                      ON inventory.film_id = film.film_id")
 results <- results[results$rental_rate == max(results$rental_rate),]
 results <- unique(results$title)
 return(results)
@@ -269,7 +339,14 @@ print("First 10:")
 print(sort(v1())[1:10])
 
 v2 <- function() {
-results <- dbGetQuery(db, "SELECT DISTINCT film.title FROM rental JOIN inventory ON rental.inventory_id = inventory.inventory_id JOIN film ON inventory.film_id = film.film_id WHERE film.rental_rate = (SELECT MAX(rental_rate) from film)")
+results <- dbGetQuery(db, "SELECT
+DISTINCT film.title
+FROM rental
+JOIN inventory
+ON rental.inventory_id = inventory.inventory_id
+JOIN film
+ON inventory.film_id = film.film_id
+WHERE film.rental_rate = (SELECT MAX(rental_rate) from film)")
 return(results)
 }
 
@@ -295,7 +372,9 @@ data <- read.csv("au-500.csv")
 ```{r}
 match_indices <- grep(".com$", tolower(data$web))
 percent <- length(match_indices) / nrow(data)
-print(paste("The percentage of the websites that are .com (and not .com.au) is: ", percent))
+print(paste("The percentage of the websites that are
+            .com (and not .com.au) is: "
+            , percent))
 ```
 
 ## b) What is the most common domain name amongst the email addresses? (In the email “statistics\@umich.edu”, “umich.edu” is the domain name.)
@@ -309,7 +388,8 @@ domains <- regmatches(data$email, match_rows)
 
 domains <- gsub("@", "", domains)
 most_frequent <- names(which.max(table(domains)))
-print(paste("The most frequent domain is: ", most_frequent))
+print(paste("The most frequent domain is: ",
+            most_frequent))
                        
 ```
 
@@ -317,18 +397,25 @@ print(paste("The most frequent domain is: ", most_frequent))
 
 ```{r}
 match_indices <- grep("[^a-zA-Z, ]", data$company_name)
-print(paste("Proportion with a nonalphabetic character: ", length(match_indices) / nrow(data)))
+print(paste("Proportion
+            with a nonalphabetic character: ",
+            length(match_indices) / nrow(data)))
 
 match_indices <- grep("[^a-zA-Z, &]", data$company_name)
-print(paste("Proportion with a nonalphabetic character (no ampersands): ", length(match_indices) / nrow(data)))
+print(paste("Proportion
+            with a nonalphabetic character (no ampersands): ",
+            length(match_indices) / nrow(data)))
 ```
 
 ## d) In Australia, phone have 10 digits - but unlike in the US where we write all numbers as “123-456-7890”, they write land lines and cell phones differently. There are two different phones listed for each record. Make all phone numbers written like cell phones. Show it works by printing the first 10 phone numbers of each column.
 
 ```{r}
 format_to_cell <- function(phone_col) {
-  clean_digits <- gsub("\\D", "", phone_col)
-  gsub("(\\d{4})(\\d{3})(\\d{3})", "\\1-\\2-\\3", clean_digits)
+  clean_digits <- gsub("\\D",
+                       "", phone_col)
+  gsub("(\\d{4})(\\d{3})(\\d{3})",
+       "\\1-\\2-\\3",
+       clean_digits)
 }
 
 data$phone1 <- format_to_cell(data$phone1)
@@ -342,36 +429,56 @@ head(data[, c("phone1", "phone2")], 10)
 ```{r}
 
 
-matches <- regexec("(?i)(apt|apartment|unit|#)\\s*([a-z0-9-]+)", data$address, perl = TRUE)
+matches <- regexec("(?i)(apt|apartment|unit|#)\\s*([a-z0-9-]+)"
+                   ,data$address
+                   ,perl = TRUE)
 
 matches_list <- regmatches(data$address, matches)
 
-apt_numbers <- sapply(matches_list, function(x) if(length(x) >= 3) x[3] else NA)
+apt_numbers <- sapply(matches_list,
+                      function(x) if(length(x) >= 3) x[3]
+                      else NA)
 
 apt_numbers_clean <- (as.integer(na.omit(apt_numbers)))
 
 
-hist(log(apt_numbers_clean), na.rm = TRUE)
+hist(log(apt_numbers_clean),
+     na.rm = TRUE)
 ```
 
 ## f) Benford’s law is an observation about the distribution of the leading digit of real numerical data. Examine whether the apartment numbers appear to follow Benford’s law. Do you think the apartment numbers would pass as real data?
 
 ```{r}
-matches <- regexec("(?i)(apt|apartment|unit|#)\\s*([a-z0-9-]+)", data$address, perl = TRUE)
+matches <- regexec("(?i)(apt|apartment|unit|#)\\s*([a-z0-9-]+)"
+                   ,data$address
+                   ,perl = TRUE)
 
 matches_list <- regmatches(data$address, matches)
 
-apt_numbers <- sapply(matches_list, function(x) if(length(x) >= 3) x[3] else NA)
+apt_numbers <- sapply(matches_list,
+                      function(x) if(length(x) >= 3) x[3]
+                      else NA)
 
-apt_numbers_leading_digit <- substr(apt_numbers, 1, 1)
+apt_numbers_leading_digit <- substr(
+  apt_numbers, 1, 1)
 
-apt_numbers_leading_digit_clean <- (as.integer(na.omit(apt_numbers_leading_digit)))
+apt_numbers_leading_digit_clean <- (
+  as.integer(na.omit(apt_numbers_leading_digit)))
 
 
-hist(apt_numbers_leading_digit_clean, na.rm = TRUE)
+hist(apt_numbers_leading_digit_clean,
+     na.rm = TRUE)
 ```
 
 Yes, we look at the histogram above and see that the lowest histogram bar is the highest bar, meaning that it has the most observations that full under it. Benford's law, also known as Newcomb–Benford law, is an observation that many real world leading digits are small. In these scenario, we see that a leading 1 is much more common than any other digit. 
+
+
+# Sources
+
+Regexec: https://yihui.org/en/2023/10/three-functions/ - the regexec function is used to get substrings with patterns.
+
+haven library: https://cran.r-project.org/web/packages/haven/index.html - import foreign statistical datasets into R, such as .xpt with read_xpt().
+
 
 
 

@@ -12,7 +12,7 @@ The github repo is https://github.com/leonestv-byte/506_hw3.
 This problem will require you to learn things we have not covered. Use the R help, or online resources, to figure out the appropriate command(s). Use citation as necessary.
 
 ```{r, message=FALSE}
-#| echo: false
+#| code-fold: true
 
 library(dplyr)
 library(haven)
@@ -22,9 +22,11 @@ library(haven)
 
 ```{r}
 
+# Read in data from xpt.
 aux <- read_xpt("AUX_I.xpt")
 demo <- read_xpt("DEMO_I.xpt")
 
+# Merge matching data only.
 data <- inner_join(aux, demo, by = "SEQN")
 print(paste("The number of rows remaining is ",
             nrow(data)))
@@ -68,6 +70,7 @@ print(paste("Number Don't Know ",
 print(paste("Number NA:",
             sum(is.na(data$DMDCITZN))))
 
+# Remove missing data categories
 data$DMDCITZN[data$DMDCITZN %in%  c(7, 9)] <- NA
 
 print(paste("Number NA after cleanup:",
@@ -136,6 +139,7 @@ print(paste("Number Don't Know:",
 print(paste("Number NA:",
             sum(is.na(data$INDHHIN2))))
 
+# Remove missing data categories
 data$INDHHIN2[data$INDHHIN2 %in%  c(12, 13, 77, 99)] <- NA
 
 print(paste("Number NA after Fixing:",
@@ -158,10 +162,11 @@ We proceed as the data is cleaned up.
 
 #### 2L - Left ear: gender, citizenship status (as categorical), number of children (as continuous), annual household income (as continuous)
 
-Produce a table presenting the estimated incidence risk ratios for the coefficients in each model, along with the sample size for the model, the pseudo-𝑅2, and AIC values. (This can be a single table, or one table for coefficients and a separate table for model statistics).
+Produce a table presenting the estimated incidence risk ratios for the coefficients in each model, along with the sample size for the model, the pseudo R2, and AIC values. (This can be a single table, or one table for coefficients and a separate table for model statistics).
 
 ```{r}
 
+# Train models.
 model_1R <- glm(AUAREQC ~ RIAGENDR,
                 family = poisson(link = "log"), data = data)
 model_2R <- glm(AUAREQC ~ RIAGENDR
@@ -177,7 +182,7 @@ model_2L <- glm(AUAREQC ~ RIAGENDR
 ```
 
 ```{r, message=FALSE}
-#| echo: false
+#| code-fold: true
 
 library(knitr)
 library(pscl)
@@ -185,6 +190,8 @@ library(pscl)
 
 ```{r}
 
+# Extract metrics.
+# Params: model - poisson model.
 build_metrics <- function(model) {
   c(IRR = exp(coef(model)["RIAGENDR"]),
     N   = nobs(model),
@@ -202,6 +209,7 @@ df <- data.frame(
 
 df_flipped <- as.data.frame(t(df))
 
+# Table
 kable(df_flipped,
       col.names = c("Incidence Risk Ratio",
                     "Sample Size",
@@ -216,6 +224,9 @@ kable(df_flipped,
 ```{r}
 summary(model_2L)
 library(marginaleffects)
+
+# We use marginal effects
+# on the coefficient.
 avg_predictions(model_2L,
                 variables = "RIAGENDR")
 ```
@@ -238,6 +249,9 @@ db <- dbConnect(RSQLite::SQLite(),
 
 #1)
 
+# Active Customers
+# By Store.
+# SQL + R version.
 v1 <- function() {
 results <- dbGetQuery(db,
                       "SELECT store_id,
@@ -256,6 +270,9 @@ print(v1())
 
 #2)
 
+# Active Customers
+# By Store.
+# Only SQL version.
 v2 <- function() {
 results <- dbGetQuery(db,
 "SELECT store_id, AVG( CASE WHEN customer.active == 1
@@ -279,6 +296,8 @@ Only SQL is faster.
 
 ```{r}
 
+# Staff members.
+# SQL + R version.
 v1 <- function() {
 results <- dbGetQuery(db,
                       "SELECT * FROM staff
@@ -295,6 +314,8 @@ return(total)
 
 print(v1())
 
+# Staff members.
+# SQL Only version.
 v2 <- function() {
 results <- dbGetQuery(db,
 "SELECT
@@ -322,6 +343,8 @@ Only SQL is marginally faster.
 
 ```{r}
 
+# Priciest films.
+# SQL + R version.
 v1 <- function() {
 results <- dbGetQuery(db,
                       "SELECT *
@@ -338,6 +361,8 @@ return(results)
 print("First 10:")
 print(sort(v1())[1:10])
 
+# Priciest films.
+# SQL Only version.
 v2 <- function() {
 results <- dbGetQuery(db, "SELECT
 DISTINCT film.title
@@ -372,9 +397,16 @@ data <- read.csv("au-500.csv")
 ```{r}
 match_indices <- grep(".com$", tolower(data$web))
 percent <- length(match_indices) / nrow(data)
-print(paste("The percentage of the websites that are
+
+# Print out
+# (deals with page margin
+# to show all code)
+text = paste("The percentage of the websites that are
             .com (and not .com.au) is: "
-            , percent))
+            , percent)
+text <- gsub("\n", " ", text)
+text <- gsub("             ", " ", text)
+print(text)
 ```
 
 ## b) What is the most common domain name amongst the email addresses? (In the email “statistics\@umich.edu”, “umich.edu” is the domain name.)
@@ -397,19 +429,35 @@ print(paste("The most frequent domain is: ",
 
 ```{r}
 match_indices <- grep("[^a-zA-Z, ]", data$company_name)
-print(paste("Proportion
+# Print out
+# (deals with page margin
+# to show all code)
+text = paste("Proportion
             with a nonalphabetic character: ",
-            length(match_indices) / nrow(data)))
+            length(match_indices) / nrow(data))
+text <- gsub("\n", " ", text)
+text <- gsub("             ", " ", text)
+print(text)
+
 
 match_indices <- grep("[^a-zA-Z, &]", data$company_name)
-print(paste("Proportion
+# Print out
+# (deals with page margin
+# to show all code)
+text = paste("Proportion
             with a nonalphabetic character (no ampersands): ",
-            length(match_indices) / nrow(data)))
+            length(match_indices) / nrow(data))
+text <- gsub("\n", " ", text)
+text <- gsub("             ", " ", text)
+print(text)
 ```
 
 ## d) In Australia, phone have 10 digits - but unlike in the US where we write all numbers as “123-456-7890”, they write land lines and cell phones differently. There are two different phones listed for each record. Make all phone numbers written like cell phones. Show it works by printing the first 10 phone numbers of each column.
 
 ```{r}
+# Convert a phone number
+# to cell phone format.
+# Params: phone_col: phone number
 format_to_cell <- function(phone_col) {
   clean_digits <- gsub("\\D",
                        "", phone_col)
@@ -439,11 +487,12 @@ apt_numbers <- sapply(matches_list,
                       function(x) if(length(x) >= 3) x[3]
                       else NA)
 
-apt_numbers_clean <- (as.integer(na.omit(apt_numbers)))
+apt_numbers_clean <- suppressWarnings(as.integer(na.omit(apt_numbers)))
 
 
-hist(log(apt_numbers_clean),
-     na.rm = TRUE)
+suppressWarnings(
+  hist(log(apt_numbers_clean),
+     na.rm = TRUE))
 ```
 
 ## f) Benford’s law is an observation about the distribution of the leading digit of real numerical data. Examine whether the apartment numbers appear to follow Benford’s law. Do you think the apartment numbers would pass as real data?
@@ -462,12 +511,13 @@ apt_numbers <- sapply(matches_list,
 apt_numbers_leading_digit <- substr(
   apt_numbers, 1, 1)
 
-apt_numbers_leading_digit_clean <- (
+apt_numbers_leading_digit_clean <- suppressWarnings(
   as.integer(na.omit(apt_numbers_leading_digit)))
 
 
-hist(apt_numbers_leading_digit_clean,
-     na.rm = TRUE)
+suppressWarnings(hist(
+  apt_numbers_leading_digit_clean,
+     na.rm = TRUE))
 ```
 
 Yes, we look at the histogram above and see that the lowest histogram bar is the highest bar, meaning that it has the most observations that full under it. Benford's law, also known as Newcomb–Benford law, is an observation that many real world leading digits are small. In these scenario, we see that a leading 1 is much more common than any other digit. 
@@ -478,6 +528,8 @@ Yes, we look at the histogram above and see that the lowest histogram bar is the
 Regexec: https://yihui.org/en/2023/10/three-functions/ - the regexec function is used to get substrings with patterns.
 
 haven library: https://cran.r-project.org/web/packages/haven/index.html - import foreign statistical datasets into R, such as .xpt with read_xpt().
+
+suppressWarnings: https://www.rdocumentation.org/packages/backports/versions/1.5.1/topics/suppressWarnings - keep warnings from printing out. Code cleanliness only. 
 
 
 

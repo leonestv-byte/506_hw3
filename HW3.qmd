@@ -487,7 +487,8 @@ apt_numbers <- sapply(matches_list,
                       function(x) if(length(x) >= 3) x[3]
                       else NA)
 
-apt_numbers_clean <- suppressWarnings(as.integer(na.omit(apt_numbers)))
+apt_numbers_clean <- suppressWarnings(
+  as.integer(na.omit(apt_numbers)))
 
 
 suppressWarnings(
